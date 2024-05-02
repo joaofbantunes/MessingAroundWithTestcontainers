@@ -9,12 +9,12 @@ using static Api.SampleKeyGenerator;
 
 namespace Api.Tests;
 
-public class TestingRandomStuff(LocalStackFixture localStackFixture, ValKeyFixture valKeyFixture)
-    : IClassFixture<LocalStackFixture>, IClassFixture<ValKeyFixture>, IAsyncLifetime
+public class TestingRandomStuff(LocalStackFixture localStackFixture, ValkeyFixture valkeyFixture)
+    : IClassFixture<LocalStackFixture>, IClassFixture<ValkeyFixture>, IAsyncLifetime
 {
     private readonly string _sampleSqsQueueName = $"test-queue-{Guid.NewGuid()}";
     private IAmazonSQS _sqsClient = null!; // initialized in InitializeAsync
-    private IConnectionMultiplexer _valKeyConnection = null!; // initialized in InitializeAsync
+    private IConnectionMultiplexer _valkeyConnection = null!; // initialized in InitializeAsync
 
     [Fact]
     public async Task WhenDoingRandomTestsRandomStuffHappens()
@@ -22,7 +22,7 @@ public class TestingRandomStuff(LocalStackFixture localStackFixture, ValKeyFixtu
         await using var factory = WebApplicationFactoryBuilder.Create()
             .WithAwsSqs(localStackFixture.ConnectionString)
             .WithConfiguration("SqsQueueName", _sampleSqsQueueName)
-            .WithConfiguration("ValKeyEndpoint", valKeyFixture.Endpoint)
+            .WithConfiguration("ValkeyEndpoint", valkeyFixture.Endpoint)
             .Build();
 
         /*
@@ -34,19 +34,19 @@ public class TestingRandomStuff(LocalStackFixture localStackFixture, ValKeyFixtu
          */
         _ = factory.Services.GetRequiredService<IConfiguration>();
 
-        const string messageBody = "Hello LocalStack and ValKey in Testcontainers!";
+        const string messageBody = "Hello LocalStack and Valkey in Testcontainers!";
         await _sqsClient.SendMessageAsync(
             _sampleSqsQueueName,
             messageBody);
 
-        var value = await GetValKeyValue(GenerateKey(messageBody));
+        var value = await GetValkeyValue(GenerateKey(messageBody));
         value.Should().Be(messageBody);
     }
 
-    private async Task<string> GetValKeyValue(string key)
+    private async Task<string> GetValkeyValue(string key)
     {
         var value = await ExecuteAndRetryAsync(
-            () => _valKeyConnection.GetDatabase().StringGetAsync(key),
+            () => _valkeyConnection.GetDatabase().StringGetAsync(key),
             v => v.HasValue,
             TimeSpan.FromMilliseconds(10),
             TimeSpan.FromSeconds(5)
@@ -63,12 +63,12 @@ public class TestingRandomStuff(LocalStackFixture localStackFixture, ValKeyFixtu
         // this needs to run before the host starts up, otherwise it'll fail due to the queue not existing
         await _sqsClient.CreateQueueAsync(_sampleSqsQueueName);
 
-        _valKeyConnection = await ConnectionMultiplexer.ConnectAsync(valKeyFixture.Endpoint);
+        _valkeyConnection = await ConnectionMultiplexer.ConnectAsync(valkeyFixture.Endpoint);
     }
 
     public async Task DisposeAsync()
     {
         _sqsClient.Dispose();
-        await _valKeyConnection.DisposeAsync();
+        await _valkeyConnection.DisposeAsync();
     }
 }

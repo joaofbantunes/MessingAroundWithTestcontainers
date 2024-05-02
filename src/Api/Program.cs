@@ -7,7 +7,7 @@ builder.Services
     .AddAWSService<IAmazonSQS>()
     .AddHostedService<SqsBackgroundService>()
     .AddSingleton<IConnectionMultiplexer>(
-        s => ConnectionMultiplexer.Connect(s.GetRequiredService<IConfiguration>().GetValue<string>("ValKeyEndpoint")!));
+        s => ConnectionMultiplexer.Connect(s.GetRequiredService<IConfiguration>().GetValue<string>("ValkeyEndpoint")!));
 
 var app = builder.Build();
 

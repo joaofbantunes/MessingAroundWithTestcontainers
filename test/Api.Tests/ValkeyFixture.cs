@@ -4,7 +4,7 @@ using DotNet.Testcontainers.Containers;
 namespace Api.Tests;
 
 // ReSharper disable once ClassNeverInstantiated.Global - automagically instantiated by xUnit
-public class ValKeyFixture : IAsyncLifetime
+public class ValkeyFixture : IAsyncLifetime
 {
     private readonly IContainer _container = new ContainerBuilder()
         .WithImage("valkey/valkey:7.2-alpine")
